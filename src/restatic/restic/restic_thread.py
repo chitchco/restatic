@@ -4,9 +4,10 @@ import sys
 import shutil
 import signal
 import logging
+import subprocess
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication
-from subprocess import Popen, PIPE, CREATE_NEW_PROCESS_GROUP
+from subprocess import Popen, PIPE
 
 from ..models import EventLogModel, BackupProfileMixin
 from ..utils import keyring
@@ -128,6 +129,13 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
         )
         log_entry.save()
 
+        try:
+            creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+            preexec_fn = None
+        except AttributeError:
+            creationflags = 0
+            preexec_fn = os.setsid
+
         self.process = Popen(
             self.cmd,
             stdout=PIPE,
@@ -135,7 +143,8 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
             bufsize=1,
             universal_newlines=True,
             env=self.env,
-            creationflags=CREATE_NEW_PROCESS_GROUP,
+            creationflags=creationflags,
+            preexec_fn=preexec_fn,
         )
 
         for line in iter(self.process.stderr.readline, ""):
