@@ -6,7 +6,7 @@ import signal
 import logging
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, CREATE_NEW_PROCESS_GROUP
 
 from ..models import EventLogModel, BackupProfileMixin
 from ..utils import keyring
@@ -135,7 +135,7 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
             bufsize=1,
             universal_newlines=True,
             env=self.env,
-            preexec_fn=os.setsid,
+            creationflags=CREATE_NEW_PROCESS_GROUP,
         )
 
         for line in iter(self.process.stderr.readline, ""):

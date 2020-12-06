@@ -1,6 +1,5 @@
 import os
 import sys
-import fcntl
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication
@@ -28,23 +27,9 @@ class RestaticApp(QApplication):
     backup_cancelled_event = QtCore.pyqtSignal()
     backup_log_event = QtCore.pyqtSignal(str)
 
-    def __init__(self, args, single_app=False):
-
-        # Ensure only one app instance is running.
-        # From https://stackoverflow.com/questions/220525/
-        #              ensure-a-single-instance-of-an-application-in-linux#221159
-        if single_app:
-            pid_file = os.path.join(SETTINGS_DIR, "restatic.pid")
-            lockfile = open(pid_file, "w+")
-            try:
-                fcntl.lockf(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                self.lockfile = lockfile
-            except OSError:
-                print("An instance of Restatic is already running.")
-                sys.exit(1)
-
+    def __init__(self, args):
         super().__init__(args)
-        self.setQuitOnLastWindowClosed(False)
+        self.setQuitOnLastWindowClosed(True)
         self.scheduler = RestaticScheduler(self)
 
         # Prepare tray and main window
