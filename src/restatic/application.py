@@ -1,6 +1,7 @@
 import os
 import sys
-import fcntl
+#import fcntl
+import portalocker
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication
@@ -37,7 +38,8 @@ class RestaticApp(QApplication):
             pid_file = os.path.join(SETTINGS_DIR, "restatic.pid")
             lockfile = open(pid_file, "w+")
             try:
-                fcntl.lockf(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                # fcntl.lockf(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                portalocker.lock(lockfile, portalocker.LOCK_EX | portalocker.LOCK_NB)
                 self.lockfile = lockfile
             except OSError:
                 print("An instance of Restatic is already running.")
