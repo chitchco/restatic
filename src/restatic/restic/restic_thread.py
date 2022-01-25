@@ -221,7 +221,7 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
         #         msg = line.strip()
         #         self.log_event(msg)
         #         logger.warning(msg)
-
+        #
 
         # self.process.wait()
         stdout = oline
