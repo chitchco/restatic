@@ -1,15 +1,22 @@
 import json
 import os
+import subprocess
 import sys
 import shutil
 import signal
 import logging
+import time
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication
 from subprocess import Popen, PIPE
+from threading import Thread
+from queue import Queue, Empty
+from concurrent.futures import ThreadPoolExecutor
 
 from ..models import EventLogModel, BackupProfileMixin
 from ..utils import keyring
+
+ON_POSIX = 'posix' in sys.builtin_module_names
 
 mutex = QtCore.QMutex()
 logger = logging.getLogger("restatic")
@@ -119,6 +126,37 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
                 return None
 
     def run(self):
+        def enqueue_output(file, queue):
+            for line in iter(file.readline, ''):
+                queue.put(line)
+            file.close()
+
+        def read_popen_pipes(p):
+
+            with ThreadPoolExecutor(2) as pool:
+                q_stdout, q_stderr = Queue(), Queue()
+
+                pool.submit(enqueue_output, p.stdout, q_stdout)
+                pool.submit(enqueue_output, p.stderr, q_stderr)
+
+                while True:
+
+                    if p.poll() is not None and q_stdout.empty() and q_stderr.empty():
+                        break
+
+                    out_line = err_line = ''
+
+                    try:
+                        out_line = q_stdout.get_nowait()
+                    except Empty:
+                        pass
+                    try:
+                        err_line = q_stderr.get_nowait()
+                    except Empty:
+                        pass
+
+                    yield out_line, err_line
+
         self.started_event()
         mutex.lock()
         log_entry = EventLogModel(
@@ -126,38 +164,70 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
             subcommand=self.cmd[1],
             profile=self.params.get("profile_name", None),
         )
+
         log_entry.save()
+        kwargs = {'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE, 'bufsize': 1, 'universal_newlines': True,
+                  'env': self.env, 'close_fds': ON_POSIX}
+        eline = ''
+        oline = ''
+        with subprocess.Popen(self.cmd, **kwargs) as p:
 
-        self.process = Popen(
-            self.cmd,
-            stdout=PIPE,
-            stderr=PIPE,
-            bufsize=1,
-            universal_newlines=True,
-            env=self.env,
-            preexec_fn=os.setsid,
-        )
+            for out_line, err_line in read_popen_pipes(p):
+                # Do stuff with each line, e.g.:
+                print(out_line, end='')
+                print(err_line, end='')
+                eline += err_line
+                oline += out_line
 
-        for line in iter(self.process.stderr.readline, ""):
-            try:
-                self.process_line(line)  # hook for lines
-                parsed = json.loads(line)
-                if parsed["type"] == "log_message":
-                    self.log_event(f'{parsed["levelname"]}: {parsed["message"]}')
-                    level_int = getattr(logging, parsed["levelname"])
-                    logger.log(level_int, parsed["message"])
-                elif parsed["type"] == "file_status":
-                    self.log_event(f'{parsed["path"]} ({parsed["status"]})')
-            except json.decoder.JSONDecodeError:
-                msg = line.strip()
-                self.log_event(msg)
-                logger.warning(msg)
+        rc = p.poll()  # return status-code
+        print("rc: ", rc)
 
-        self.process.wait()
-        stdout = self.process.stdout.read()
+        # q1 = Queue()
+        # t1 = Thread(target=enqueue_output, args=(self.process.stdout, q1))
+        # t1.daemon = True
+        # t1.start()
+        # q2 = Queue()
+        # t2 = Thread(target=enqueue_output, args=(self.process.stderr, q2))
+        # t2.daemon = True
+        # t2.start()
+        # time.sleep(2)
+        #
+        #
+        # try:
+        #     line = q1.get_nowait()  # or q.get(timeout=.1)
+        # except Empty:
+        #     print('no output yet')
+        # else:  # got line
+        #     print(line)
+        #
+        # try:
+        #     line = q2.get_nowait()  # or q.get(timeout=.1)
+        # except Empty:
+        #     print('no output yet')
+        # else:  # got line
+        #     print(line)
+
+        # for line in iter(eline.readline, ""):
+        #     try:
+        #         self.process_line(line)  # hook for lines
+        #         parsed = json.loads(line)
+        #         if parsed["type"] == "log_message":
+        #             self.log_event(f'{parsed["levelname"]}: {parsed["message"]}')
+        #             level_int = getattr(logging, parsed["levelname"])
+        #             logger.log(level_int, parsed["message"])
+        #         elif parsed["type"] == "file_status":
+        #             self.log_event(f'{parsed["path"]} ({parsed["status"]})')
+        #     except json.decoder.JSONDecodeError:
+        #         msg = line.strip()
+        #         self.log_event(msg)
+        #         logger.warning(msg)
+
+
+        # self.process.wait()
+        stdout = oline
         result = {
             "params": self.params,
-            "returncode": self.process.returncode,
+            "returncode": rc,
             "cmd": self.cmd,
         }
         try:
@@ -165,7 +235,7 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
         except:  # noqa
             result["data"] = {}
 
-        log_entry.returncode = self.process.returncode
+        log_entry.returncode = rc
         log_entry.repo_url = self.params.get("repo_url", None)
         log_entry.save()
 
