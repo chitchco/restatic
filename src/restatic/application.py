@@ -28,6 +28,7 @@ class RestaticApp(QApplication):
     backup_finished_event = QtCore.pyqtSignal(dict)
     backup_cancelled_event = QtCore.pyqtSignal()
     backup_log_event = QtCore.pyqtSignal(str)
+    backup_progress_event = QtCore.pyqtSignal(int)
 
     def __init__(self, args, single_app=False):
 

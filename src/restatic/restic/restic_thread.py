@@ -175,11 +175,22 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
             for out_line, err_line in read_popen_pipes(p):
                 # Do stuff with each line, e.g.:
                 print(out_line, end='')
+                try:
+                    parsed = json.loads(out_line)
+                    if parsed["message_type"] == "status":
+                        self.app.backup_progress_event.emit(parsed["percent_done"]*100)
+                    if parsed["message_type"] == "summary":
+                        pass
+                except:
+                    pass
+
                 print(err_line, end='')
                 eline += err_line
                 oline += out_line
 
         rc = p.poll()  # return status-code
+        # self.app.backup_progress_event.emit(50)
+        # time.sleep(10)
         print("rc: ", rc)
 
         # q1 = Queue()

@@ -11,7 +11,6 @@ from ..utils import get_asset
 from ..models import BackupProfileModel
 from restatic.restic.restic_thread import ResticThread
 
-
 uifile = get_asset("UI/mainwindow.ui")
 MainWindowUI, MainWindowBase = uic.loadUiType(
     uifile, from_imports=True, import_from="restatic.views"
@@ -52,6 +51,7 @@ class MainWindow(MainWindowBase, MainWindowUI):
         self.app.backup_finished_event.connect(self.backup_finished_event)
         self.app.backup_log_event.connect(self.set_status)
         self.app.backup_cancelled_event.connect(self.backup_cancelled_event)
+        self.app.backup_progress_event.connect(self.backup_progress_event)
 
         # Init profile list
         self.profileSelector.addItem("+ Add New Profile", None)
@@ -77,6 +77,11 @@ class MainWindow(MainWindowBase, MainWindowUI):
         if progress_max is not None:
             self.createProgress.setRange(0, progress_max)
         self.createProgressText.repaint()
+
+    def set_progress(self, val=None, progress_max=None):
+        if progress_max is not None and val is not None:
+            self.createProgress.setRange(0, progress_max)
+            self.createProgress.setValue(val)
 
     def _toggle_buttons(self, create_enabled=True):
         self.createStartBtn.setEnabled(create_enabled)
@@ -126,6 +131,10 @@ class MainWindow(MainWindowBase, MainWindowUI):
     def backup_started_event(self):
         self.set_status(progress_max=0)
         self._toggle_buttons(create_enabled=False)
+
+    def backup_progress_event(self, progress_value=None):
+        if progress_value is not None:
+            self.set_progress(val=progress_value, progress_max=100)
 
     def backup_finished_event(self):
         self.set_status(progress_max=100)
