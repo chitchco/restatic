@@ -45,7 +45,7 @@ class TrayMenu(QSystemTrayIcon):
     def on_user_click(self):
         """Adjust labels to reflect current status."""
         if ResticThread.is_running():
-            self.status.setText("Backup in Progress")
+            self.status.setText(f'Backup in Progress:')
             self.profile_menu.setEnabled(False)
             self.cancel_action.setVisible(True)
         else:

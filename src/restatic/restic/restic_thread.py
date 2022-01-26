@@ -189,34 +189,7 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
                 oline += out_line
 
         rc = p.poll()  # return status-code
-        # self.app.backup_progress_event.emit(50)
-        # time.sleep(10)
         print("rc: ", rc)
-
-        # q1 = Queue()
-        # t1 = Thread(target=enqueue_output, args=(self.process.stdout, q1))
-        # t1.daemon = True
-        # t1.start()
-        # q2 = Queue()
-        # t2 = Thread(target=enqueue_output, args=(self.process.stderr, q2))
-        # t2.daemon = True
-        # t2.start()
-        # time.sleep(2)
-        #
-        #
-        # try:
-        #     line = q1.get_nowait()  # or q.get(timeout=.1)
-        # except Empty:
-        #     print('no output yet')
-        # else:  # got line
-        #     print(line)
-        #
-        # try:
-        #     line = q2.get_nowait()  # or q.get(timeout=.1)
-        # except Empty:
-        #     print('no output yet')
-        # else:  # got line
-        #     print(line)
 
         # for line in iter(eline.readline, ""):
         #     try:

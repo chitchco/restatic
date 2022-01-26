@@ -78,12 +78,15 @@ class RestaticApp(QApplication):
     def backup_started_event_response(self):
         icon = QIcon(get_asset("icons/hdd-o-active.png"))
         self.tray.setIcon(icon)
+        # self.tray.showMessage('restatic', "backup started...", 2)
 
     def backup_finished_event_response(self):
         icon = QIcon(get_asset("icons/hdd-o.png"))
         self.tray.setIcon(icon)
+        # self.tray.showMessage('restatic', "backup finished...", 2)
         self.main_window.scheduleTab._draw_next_scheduled_backup()
 
     def backup_cancelled_event_response(self):
         icon = QIcon(get_asset("icons/hdd-o.png"))
         self.tray.setIcon(icon)
+        # self.tray.showMessage('restatic', "backup cancelled...", 2)
