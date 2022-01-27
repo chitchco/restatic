@@ -189,6 +189,8 @@ class ResticThread(QtCore.QThread, BackupProfileMixin):
                 oline += out_line
 
         rc = p.poll()  # return status-code
+        print(self.cmd, kwargs )
+
         print("rc: ", rc)
 
         # for line in iter(eline.readline, ""):

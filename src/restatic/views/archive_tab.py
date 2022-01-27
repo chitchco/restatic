@@ -3,6 +3,7 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import QTableWidgetItem, QTableView, QHeaderView
 
 from restatic.restic.prune import ResticPruneThread
+# from restatic.restic.keep import ResticKeepThread
 from restatic.restic.list import ResticListThread
 from restatic.restic.check import ResticCheckThread
 from restatic.restic.mount import ResticMountThread
@@ -100,6 +101,26 @@ class ArchiveTab(ArchiveTabBase, ArchiveTabUI, BackupProfileMixin):
     def check_result(self, result):
         if result["returncode"] == 0:
             self._toggle_all_buttons(True)
+
+    # def pruneit_action(self):
+    #     self.keep_action()
+    #     self.prune_action()
+
+    # def keep_action(self):
+    #     params = ResticKeepThread.prepare(self.profile())
+    #     if params["ok"]:
+    #         thread = ResticKeepThread(params["cmd"], params, parent=self)
+    #         thread.updated.connect(self._set_status)
+    #         thread.result.connect(self.keep_result)
+    #         self._toggle_all_buttons(False)
+    #         thread.start()
+
+    # def keep_result(self, result):
+    #     if result["returncode"] == 0:
+    #         self._set_status("Pruning finished.")
+    #         self.list_action()
+    #     else:
+    #         self._toggle_all_buttons(True)
 
     def prune_action(self):
         params = ResticPruneThread.prepare(self.profile())

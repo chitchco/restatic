@@ -4,9 +4,7 @@ block_cipher = None
 
 a = Analysis(['src/restatic/__main__.py'],
              pathex=['/Users/manu/Workspace/restatic/src'],
-             binaries=[
-                ('bin/macosx64/borg', 'bin'),
-             ],
+             binaries=[],
              datas=[
                 ('src/restatic/assets/UI/*', 'assets/UI'),
                 ('src/restatic/assets/icons/*', 'assets/icons'),
